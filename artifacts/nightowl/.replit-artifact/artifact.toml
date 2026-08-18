@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NightOwl"
+description = "A branded NightOwl landing page for an AI operations agent that helps small businesses handle customer inquiries, invoice follow-ups, scheduling, and daily briefings."
+version = "1.0.0"
+id = "artifacts/nightowl"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20807
+
+[services.development]
+run = "pnpm --filter @workspace/nightowl run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nightowl", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/nightowl/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20807"
+BASE_PATH = "/"
