@@ -142,6 +142,41 @@ export interface BillingStatus {
   message: string;
 }
 
+export type BillingPriceInterval = typeof BillingPriceInterval[keyof typeof BillingPriceInterval];
+
+
+export const BillingPriceInterval = {
+  month: 'month',
+  year: 'year',
+} as const;
+
+export interface BillingPrice {
+  id: string;
+  amount: number;
+  currency: string;
+  interval: BillingPriceInterval;
+}
+
+export interface CheckoutInput {
+  /**
+     * @minLength 3
+     * @maxLength 120
+     */
+  priceId: string;
+}
+
+export interface CheckoutSession {
+  url: string;
+}
+
+export interface BillingPortalInput {
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  sessionId: string;
+}
+
 export type ListAdminLeadsParams = {
 search?: string;
 status?: LeadStatus;

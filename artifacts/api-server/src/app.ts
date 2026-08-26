@@ -9,8 +9,33 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { WebhookHandlers } from "./webhookHandlers";
 
 const app: Express = express();
+
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res): Promise<void> => {
+    const signature = req.headers["stripe-signature"];
+
+    if (!signature) {
+      res.status(400).json({ message: "Missing stripe-signature header." });
+      return;
+    }
+
+    try {
+      const normalizedSignature = Array.isArray(signature)
+        ? signature[0]
+        : signature;
+      await WebhookHandlers.processWebhook(req.body as Buffer, normalizedSignature);
+      res.status(200).json({ received: true });
+    } catch (error) {
+      logger.error({ err: error }, "Stripe webhook processing failed");
+      res.status(400).json({ message: "Stripe webhook processing failed." });
+    }
+  },
+);
 
 app.use(
   pinoHttp({

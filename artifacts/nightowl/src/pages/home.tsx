@@ -21,8 +21,10 @@ import {
 import { Link } from 'wouter';
 import { 
   useGetPublicSiteSettings, 
+  useGetPublicBillingPrice,
   useCreateLead, 
   useCreateAnalyticsEvent,
+  useCreateCheckoutSession,
   AnalyticsEventType
 } from '@workspace/api-client-react';
 
@@ -63,10 +65,13 @@ export function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
   
   const { data: settings } = useGetPublicSiteSettings();
+  const { data: billingPrice } = useGetPublicBillingPrice();
   const createLead = useCreateLead();
   const createAnalyticsEvent = useCreateAnalyticsEvent();
+  const createCheckout = useCreateCheckoutSession();
   const pageViewTracked = useRef(false);
 
   useEffect(() => {
@@ -86,6 +91,25 @@ export function Home() {
   const goToContact = () => {
     trackCtaClick("talk_to_nightowl");
     document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const startCheckout = () => {
+    if (!billingPrice) {
+      setCheckoutError('Checkout is temporarily unavailable. Please try again shortly.');
+      return;
+    }
+
+    setCheckoutError('');
+    trackCtaClick('start_subscription');
+    createCheckout.mutate(
+      { data: { priceId: billingPrice.id } },
+      {
+        onSuccess: ({ url }) => window.location.assign(url),
+        onError: () => {
+          setCheckoutError('We could not start checkout. Please try again.');
+        },
+      },
+    );
   };
   
   const submitContact = (event: FormEvent<HTMLFormElement>) => {
@@ -280,9 +304,10 @@ export function Home() {
           <div className="nightowl-shell grid gap-12 md:grid-cols-[.8fr_1.2fr] md:items-center">
             <div><SectionEyebrow>Simple by design</SectionEyebrow><h2 className="font-display text-4xl font-semibold leading-[1.03] tracking-[-.06em] text-[#273149] md:text-6xl">A small price<br />for a <span className="text-[#23776d]">quiet mind.</span></h2><p className="mt-6 max-w-sm text-[15px] leading-7 text-[#6e736d]">No tiers to decode. No annual commitment to justify. Just a capable second shift for your business.</p></div>
             <div className="coral-shadow rounded-3xl bg-[#273149] p-7 text-[#F7F2E8] md:p-10">
-              <div className="flex flex-col justify-between gap-7 border-b border-[#526168] pb-8 sm:flex-row sm:items-end"><div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#9ed3ca]">Launch plan</p><p className="mt-3 font-display text-5xl font-semibold tracking-[-.07em]">${settings?.monthlyPrice ?? 20}<span className="text-base font-normal tracking-normal text-[#aebdb7]"> / month</span></p></div><span className="rounded-full bg-[#ed805f] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#273149]">{settings?.pricingBadge || "First six months"}</span></div>
+              <div className="flex flex-col justify-between gap-7 border-b border-[#526168] pb-8 sm:flex-row sm:items-end"><div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#9ed3ca]">Launch plan</p><p className="mt-3 font-display text-5xl font-semibold tracking-[-.07em]">${billingPrice ? billingPrice.amount / 100 : settings?.monthlyPrice ?? 20}<span className="text-base font-normal tracking-normal text-[#aebdb7]"> / month</span></p></div><span className="rounded-full bg-[#ed805f] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#273149]">{settings?.pricingBadge || "First six months"}</span></div>
               <div className="grid gap-x-8 gap-y-4 py-8 sm:grid-cols-2">{['Email triage and drafting', 'Invoice follow-up sequences', 'Smart scheduling support', 'Daily morning briefing', 'Human-first controls', 'Cancel whenever you need'].map((item) => <div key={item} className="flex items-center gap-2 text-[13px] text-[#d8e2dd]"><Check size={15} className="text-[#9ed3ca]" /> {item}</div>)}</div>
-              <button type="button" onClick={goToContact} className="w-full rounded-xl bg-[#F7F2E8] px-5 py-3.5 text-sm font-bold text-[#273149] transition-colors hover:bg-[#e5f0ed]" data-testid="button-pricing-contact">Join the early access list <ArrowRight className="ml-1 inline-block" size={15} /></button>
+              <button type="button" onClick={startCheckout} disabled={createCheckout.isPending || !billingPrice} className="w-full rounded-xl bg-[#F7F2E8] px-5 py-3.5 text-sm font-bold text-[#273149] transition-colors hover:bg-[#e5f0ed] disabled:pointer-events-none disabled:opacity-60" data-testid="button-pricing-checkout">{createCheckout.isPending ? <Loader2 className="mr-2 inline-block animate-spin" size={15} /> : null}Start your subscription {!createCheckout.isPending && <ArrowRight className="ml-1 inline-block" size={15} />}</button>
+              {checkoutError && <p className="mt-4 text-center text-xs font-semibold text-[#f7b09b]" role="alert" data-testid="status-checkout-error">{checkoutError}</p>}
               <p className="mt-5 text-center text-[11px] leading-5 text-[#98aaa4]">25% of your first six months supports a local SBA partner.</p>
             </div>
           </div>

@@ -59,27 +59,29 @@ export function AdminBillingPage() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
-            <button
-              disabled={!billing.connected}
+            <a
+              href="/#pricing"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
               data-testid="button-manage-billing"
             >
-              Manage Subscription <ExternalLink size={14} />
-            </button>
-            <button
-              disabled={!billing.connected}
+              View Checkout <ExternalLink size={14} />
+            </a>
+            <a
+              href="https://dashboard.stripe.com/invoices"
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-3 text-sm font-bold text-foreground transition-all hover:bg-secondary disabled:opacity-50 disabled:pointer-events-none"
               data-testid="button-view-invoices"
             >
-              <FileText size={14} /> View Invoices
-            </button>
+              <FileText size={14} /> Open Stripe Invoices
+            </a>
           </div>
           
           {!billing.connected && (
             <div className="mt-8 p-4 rounded-xl bg-accent/10 border border-accent/20 flex items-start gap-3">
               <AlertCircle size={18} className="text-accent mt-0.5" />
               <p className="text-sm text-accent-foreground/90">
-                Billing is currently in development. You are on a complimentary early access plan. We will notify you when payment processing is available.
+                Stripe is connected, but the NightOwl recurring price is not available. Run the Stripe catalog seed and restart the API.
               </p>
             </div>
           )}

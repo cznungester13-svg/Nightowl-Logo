@@ -77,6 +77,51 @@ export const CreateAnalyticsEventResponse = zod.void()
 
 
 /**
+ * @summary Get the active NightOwl subscription price
+ */
+export const GetPublicBillingPriceResponse = zod.object({
+  "id": zod.string(),
+  "amount": zod.int(),
+  "currency": zod.string(),
+  "interval": zod.enum(['month', 'year'])
+})
+
+
+/**
+ * @summary Create a Stripe subscription checkout session
+ */
+export const createCheckoutSessionBodyPriceIdMin = 3;
+export const createCheckoutSessionBodyPriceIdMax = 120;
+
+
+
+export const CreateCheckoutSessionBody = zod.object({
+  "priceId": zod.string().min(createCheckoutSessionBodyPriceIdMin).max(createCheckoutSessionBodyPriceIdMax)
+})
+
+export const CreateCheckoutSessionResponse = zod.object({
+  "url": zod.url()
+})
+
+
+/**
+ * @summary Open the Stripe customer billing portal for a completed checkout
+ */
+export const createBillingPortalSessionBodySessionIdMin = 3;
+export const createBillingPortalSessionBodySessionIdMax = 200;
+
+
+
+export const CreateBillingPortalSessionBody = zod.object({
+  "sessionId": zod.string().min(createBillingPortalSessionBodySessionIdMin).max(createBillingPortalSessionBodySessionIdMax)
+})
+
+export const CreateBillingPortalSessionResponse = zod.object({
+  "url": zod.url()
+})
+
+
+/**
  * @summary Check current admin access
  */
 export const GetAdminMeResponse = zod.object({
