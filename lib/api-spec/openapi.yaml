@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: public
+    description: Public NightOwl operations
+  - name: admin
+    description: Protected NightOwl administration
 paths:
   /healthz:
     get:
@@ -24,7 +28,198 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /site-settings:
+    get:
+      operationId: getPublicSiteSettings
+      tags: [public]
+      summary: Get public landing page settings
+      responses:
+        "200":
+          description: Current public settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+  /leads:
+    post:
+      operationId: createLead
+      tags: [public]
+      summary: Submit a NightOwl contact lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadInput"
+      responses:
+        "201":
+          description: Lead created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+  /analytics/events:
+    post:
+      operationId: createAnalyticsEvent
+      tags: [public]
+      summary: Record a privacy-conscious site event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsEventInput"
+      responses:
+        "204":
+          description: Event recorded
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      tags: [admin]
+      summary: Check current admin access
+      responses:
+        "200":
+          description: Admin access details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminIdentity"
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Get NightOwl admin overview
+      responses:
+        "200":
+          description: Overview metrics and recent leads
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+  /admin/leads:
+    get:
+      operationId: listAdminLeads
+      tags: [admin]
+      summary: Search and filter contact leads
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/LeadStatus"
+      responses:
+        "200":
+          description: Matching leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+  /admin/leads/{id}:
+    get:
+      operationId: getAdminLead
+      tags: [admin]
+      summary: Get a lead
+      parameters:
+        - $ref: "#/components/parameters/LeadId"
+      responses:
+        "200":
+          description: Lead details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+    patch:
+      operationId: updateAdminLead
+      tags: [admin]
+      summary: Update a lead status
+      parameters:
+        - $ref: "#/components/parameters/LeadId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadUpdate"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+  /admin/site-settings:
+    get:
+      operationId: getAdminSiteSettings
+      tags: [admin]
+      summary: Get editable landing page settings
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+    put:
+      operationId: updateAdminSiteSettings
+      tags: [admin]
+      summary: Update editable landing page settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteSettingsInput"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+  /admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      tags: [admin]
+      summary: Get first-party analytics
+      parameters:
+        - in: query
+          name: days
+          schema:
+            type: integer
+            enum: [7, 30, 90]
+            default: 30
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsSummary"
+  /admin/billing-status:
+    get:
+      operationId: getAdminBillingStatus
+      tags: [admin]
+      summary: Get billing readiness
+      responses:
+        "200":
+          description: Billing readiness
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
 components:
+  parameters:
+    LeadId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +228,184 @@ components:
           type: string
       required:
         - status
+    LeadStatus:
+      type: string
+      enum: [new, contacted, qualified, closed]
+    Lead:
+      type: object
+      required: [id, name, email, message, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/LeadStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    LeadInput:
+      type: object
+      required: [name, email, message]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        message:
+          type: string
+          minLength: 10
+          maxLength: 4000
+    LeadUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/LeadStatus"
+    SiteSettings:
+      type: object
+      required: [heroTitle, heroAccent, heroDescription, monthlyPrice, pricingBadge, contactEmail, updatedAt]
+      properties:
+        heroTitle:
+          type: string
+        heroAccent:
+          type: string
+        heroDescription:
+          type: string
+        monthlyPrice:
+          type: integer
+        pricingBadge:
+          type: string
+        contactEmail:
+          type: string
+          format: email
+        updatedAt:
+          type: string
+          format: date-time
+    SiteSettingsInput:
+      type: object
+      required: [heroTitle, heroAccent, heroDescription, monthlyPrice, pricingBadge, contactEmail]
+      properties:
+        heroTitle:
+          type: string
+          minLength: 3
+          maxLength: 80
+        heroAccent:
+          type: string
+          minLength: 3
+          maxLength: 80
+        heroDescription:
+          type: string
+          minLength: 10
+          maxLength: 300
+        monthlyPrice:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        pricingBadge:
+          type: string
+          minLength: 2
+          maxLength: 80
+        contactEmail:
+          type: string
+          format: email
+          maxLength: 255
+    AnalyticsEventType:
+      type: string
+      enum: [page_view, cta_click, contact_submission]
+    AnalyticsEventInput:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: "#/components/schemas/AnalyticsEventType"
+        label:
+          type: string
+          maxLength: 120
+    AnalyticsDay:
+      type: object
+      required: [date, pageViews, ctaClicks, contactSubmissions]
+      properties:
+        date:
+          type: string
+          format: date
+        pageViews:
+          type: integer
+        ctaClicks:
+          type: integer
+        contactSubmissions:
+          type: integer
+    AnalyticsSummary:
+      type: object
+      required: [days, pageViews, ctaClicks, contactSubmissions, conversionRate, series]
+      properties:
+        days:
+          type: integer
+        pageViews:
+          type: integer
+        ctaClicks:
+          type: integer
+        contactSubmissions:
+          type: integer
+        conversionRate:
+          type: number
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsDay"
+    AdminIdentity:
+      type: object
+      required: [email, isAdmin, allowlistConfigured]
+      properties:
+        email:
+          type: string
+          format: email
+        isAdmin:
+          type: boolean
+        allowlistConfigured:
+          type: boolean
+    AdminOverview:
+      type: object
+      required: [totalLeads, newLeads, qualifiedLeads, pageViews, conversionRate, recentLeads]
+      properties:
+        totalLeads:
+          type: integer
+        newLeads:
+          type: integer
+        qualifiedLeads:
+          type: integer
+        pageViews:
+          type: integer
+        conversionRate:
+          type: number
+        recentLeads:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lead"
+    BillingStatus:
+      type: object
+      required: [provider, connected, monthlyPrice, planName, message]
+      properties:
+        provider:
+          type: string
+        connected:
+          type: boolean
+        monthlyPrice:
+          type: integer
+        planName:
+          type: string
+        message:
+          type: string
 
