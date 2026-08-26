@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation, Redirect } from "wouter";
 import { Show, useClerk, useUser } from "@clerk/react";
 import {
@@ -10,6 +10,8 @@ import {
   LogOut,
   Moon,
   ShieldAlert,
+  Menu,
+  X,
 } from "lucide-react";
 import { useGetAdminMe } from "@workspace/api-client-react";
 
@@ -53,6 +55,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { data: adminMe, isLoading, error } = useGetAdminMe();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSignOut = () => {
     signOut({ redirectUrl: "/" });
@@ -101,7 +104,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   return (
     <div className="dark min-h-screen bg-background text-foreground flex overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col relative z-20">
+      <aside className="hidden w-64 shrink-0 border-r border-border bg-card md:flex flex-col relative z-20">
         <div className="p-6 flex items-center gap-3 border-b border-border/50">
           <OwlMark size={28} />
           <span className="font-display text-lg font-semibold tracking-tight">NightOwl</span>
@@ -160,10 +163,87 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-hidden bg-background">
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation"
+            className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            data-testid="button-close-mobile-nav-overlay"
+          />
+          <aside className="relative flex h-full w-[min(19rem,86vw)] flex-col border-r border-border bg-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/50 p-5">
+              <div className="flex items-center gap-3">
+                <OwlMark size={28} />
+                <span className="font-display text-lg font-semibold">NightOwl</span>
+              </div>
+              <button
+                type="button"
+                aria-label="Close navigation"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-xl border border-border p-2 text-muted-foreground hover:text-foreground"
+                data-testid="button-close-mobile-nav"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+              {navItems.map((item) => {
+                const active =
+                  location === item.href ||
+                  (item.href !== "/admin" && location.startsWith(item.href));
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${
+                      active
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                    data-testid={`mobile-nav-${item.label.toLowerCase()}`}
+                  >
+                    <Icon size={18} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="m-4 flex items-center gap-3 rounded-xl border border-border px-3 py-3 text-sm font-medium text-muted-foreground"
+              data-testid="button-mobile-sign-out"
+            >
+              <LogOut size={18} />
+              Sign out
+            </button>
+          </aside>
+        </div>
+      )}
+
+      <main className="min-w-0 flex-1 flex flex-col relative overflow-hidden bg-background">
         <div className="absolute inset-0 aurora night-grid opacity-10 pointer-events-none" />
+        <header className="relative z-20 flex items-center justify-between border-b border-border bg-card/90 px-4 py-3 backdrop-blur md:hidden">
+          <div className="flex items-center gap-3">
+            <OwlMark size={27} />
+            <span className="font-display font-semibold">NightOwl</span>
+          </div>
+          <button
+            type="button"
+            aria-label="Open navigation"
+            onClick={() => setMobileOpen(true)}
+            className="rounded-xl border border-border p-2.5 text-muted-foreground hover:text-foreground"
+            data-testid="button-open-mobile-nav"
+          >
+            <Menu size={20} />
+          </button>
+        </header>
         <div className="flex-1 overflow-y-auto relative z-10">
-          <div className="max-w-[1200px] mx-auto p-8 lg:p-12">
+          <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-6 lg:p-12">
             {children}
           </div>
         </div>

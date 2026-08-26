@@ -4,6 +4,23 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 
 const CLERK_FAPI = "https://frontend-api.clerk.dev";
 export const CLERK_PROXY_PATH = "/api/__clerk";
+const CANONICAL_HOST = "www.nightowlagent.org";
+
+function isTrustedHost(host: string): boolean {
+  const hostname = host.toLowerCase().split(":")[0];
+  if (!hostname) return false;
+  if (hostname === CANONICAL_HOST || hostname === "nightowlagent.org") return true;
+  if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+  if (hostname.endsWith(".replit.app") || hostname.endsWith(".replit.dev")) {
+    return true;
+  }
+  return [
+    process.env.REPLIT_DEV_DOMAIN,
+    ...(process.env.REPLIT_DOMAINS ?? "").split(","),
+  ]
+    .filter(Boolean)
+    .some((trusted) => trusted?.toLowerCase() === hostname);
+}
 
 export function getClerkProxyHost(req: {
   headers: IncomingHttpHeaders;
@@ -11,7 +28,12 @@ export function getClerkProxyHost(req: {
   const forwarded = req.headers["x-forwarded-host"];
   const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded;
   const firstHop = raw?.split(",")[0]?.trim();
-  return firstHop || req.headers.host?.trim() || undefined;
+  if (firstHop && isTrustedHost(firstHop)) return firstHop;
+
+  const requestHost = req.headers.host?.trim();
+  if (requestHost && isTrustedHost(requestHost)) return requestHost;
+
+  return process.env.NODE_ENV === "production" ? CANONICAL_HOST : undefined;
 }
 
 export function clerkProxyMiddleware(): RequestHandler {
@@ -21,7 +43,7 @@ export function clerkProxyMiddleware(): RequestHandler {
 
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) {
-    return (_req, _res, next) => next();
+    throw new Error("CLERK_SECRET_KEY is required in production");
   }
 
   return createProxyMiddleware({
@@ -32,11 +54,10 @@ export function clerkProxyMiddleware(): RequestHandler {
       path.replace(new RegExp(`^${CLERK_PROXY_PATH}`), ""),
     on: {
       proxyReq: (proxyReq, req) => {
-        const protocol = req.headers["x-forwarded-proto"] || "https";
         const host = getClerkProxyHost(req) || "";
         proxyReq.setHeader(
           "Clerk-Proxy-Url",
-          `${protocol}://${host}${CLERK_PROXY_PATH}`,
+          `https://${host}${CLERK_PROXY_PATH}`,
         );
         proxyReq.setHeader("Clerk-Secret-Key", secretKey);
 

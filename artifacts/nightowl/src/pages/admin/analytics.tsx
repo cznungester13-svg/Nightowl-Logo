@@ -5,10 +5,17 @@ import { MousePointerClick, Eye, UserPlus, TrendingUp } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 export function AdminAnalyticsPage() {
-  const [days, setDays] = useState<GetAdminAnalyticsDays>(30);
-  const { data: analytics, isLoading } = useGetAdminAnalytics({ days });
+  const [days, setDays] = useState<GetAdminAnalyticsDays>(
+    GetAdminAnalyticsDays.NUMBER_30,
+  );
+  const {
+    data: analytics,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetAdminAnalytics({ days });
 
-  if (isLoading || !analytics) {
+  if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
         <div className="h-8 w-48 bg-card rounded" />
@@ -16,6 +23,25 @@ export function AdminAnalyticsPage() {
           {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-card rounded-2xl" />)}
         </div>
         <div className="h-[400px] bg-card rounded-3xl" />
+      </div>
+    );
+  }
+
+  if (isError || !analytics) {
+    return (
+      <div className="rounded-3xl border border-destructive/30 bg-card p-8 text-center">
+        <h1 className="font-display text-2xl font-semibold">Analytics unavailable</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          NightOwl could not load the reporting window.
+        </p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-6 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+          data-testid="button-retry-analytics"
+        >
+          Try again
+        </button>
       </div>
     );
   }

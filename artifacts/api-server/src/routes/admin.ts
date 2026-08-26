@@ -165,7 +165,13 @@ router.put("/admin/site-settings", async (req, res): Promise<void> => {
 });
 
 router.get("/admin/analytics", async (req, res): Promise<void> => {
-  const parsed = GetAdminAnalyticsQueryParams.safeParse(req.query);
+  const parsed = GetAdminAnalyticsQueryParams.safeParse({
+    ...req.query,
+    days:
+      typeof req.query.days === "string"
+        ? Number(req.query.days)
+        : req.query.days,
+  });
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;

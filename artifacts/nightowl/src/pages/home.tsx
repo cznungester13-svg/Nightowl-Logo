@@ -116,7 +116,6 @@ export function Home() {
       onSuccess: () => {
         setSubmitted(true);
         form.reset();
-        createAnalyticsEvent.mutate({ data: { type: 'contact_submission' as AnalyticsEventType } });
       },
       onError: () => {
         setFormError('Something went wrong submitting your note. Please try again.');
