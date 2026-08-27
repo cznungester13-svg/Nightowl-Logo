@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -36,7 +36,7 @@ app.set("trust proxy", (address: string) => {
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
-  async (req, res): Promise<void> => {
+  async (req: Request, res: Response): Promise<void> => {
     const signature = req.headers["stripe-signature"];
 
     if (!signature) {
@@ -61,14 +61,14 @@ app.use(
   pinoHttp({
     logger,
     serializers: {
-      req(req) {
+      req(req: any) {
         return {
           id: req.id,
           method: req.method,
           url: req.url?.split("?")[0],
         };
       },
-      res(res) {
+      res(res: any) {
         return {
           statusCode: res.statusCode,
         };
