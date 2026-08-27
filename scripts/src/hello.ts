@@ -1,5 +1,5 @@
 // ==========================================
-// EMERGENCY ESCALATION & ALERT SYSTEM
+// NIGHTOWL: EMERGENCY ESCALATION & ALERTS
 // ==========================================
 const URGENT_KEYWORDS = ["emergency", "urgent", "cancellation", "system down", "asap", "help"];
 
@@ -30,13 +30,11 @@ export async function checkForEmergency(userMessage: string, customerEmail: stri
   return alertData;
 }
 
-// Simulated Alert Channel (Webhook / Twilio / Email)
 async function triggerEmergencyNotification(alert: EmergencyAlert) {
-  // Replace this placeholder URL with your actual SMS/Webhook endpoint (e.g., Twilio or Make.com)
   const WEBHOOK_URL = process.env.EMERGENCY_WEBHOOK_URL || "";
 
   if (!WEBHOOK_URL) {
-    console.warn("⚠️ Alert triggered, but EMERGENCY_WEBHOOK_URL is not set.");
+    console.warn("⚠️ Alert triggered, but EMERGENCY_WEBHOOK_URL is missing in .env");
     return;
   }
 
@@ -45,28 +43,87 @@ async function triggerEmergencyNotification(alert: EmergencyAlert) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        text: `🚨 URGENT NIGHTOWL ALERT\nFrom: ${alert.customerEmail}\nMessage: "${alert.message}"\nTime: ${alert.timestamp}`
+        content: `🚨 **URGENT NIGHTOWL ALERT**\n**From:** ${alert.customerEmail}\n**Message:** "${alert.message}"\n**Time:** ${alert.timestamp}`
       })
     });
-    console.log("✅ Emergency alert sent successfully.");
+    console.log("✅ Emergency push notification sent to Discord!");
   } catch (error) {
-    console.error("❌ Failed to send emergency notification:", error);
+    console.error("❌ Failed to send Discord alert:", error);
   }
 }
-// ==========================================
-// DEV TEST SUITE
-// ==========================================
-async function runDevTests() {
-  console.log("--- Running NightOwl Escalation Tests ---");
 
-  // Test Case 1: Normal Query (Should NOT trigger)
-  const test1 = await checkForEmergency("What are your business hours?", "client1@example.com");
-  console.log("Test 1 (Normal):", test1.isUrgent === false ? "PASSED ✅" : "FAILED ❌");
+// ==========================================
+// NIGHTOWL: CRM & CALENDAR WEBHOOK SYSTEM
+// ==========================================
 
-  // Test Case 2: Urgent Query (Should trigger)
-  const test2 = await checkForEmergency("Our system down! Need urgent assistance asap.", "client2@example.com");
-  console.log("Test 2 (Urgent):", test2.isUrgent === true ? "PASSED ✅" : "FAILED ❌");
+export interface LeadData {
+  name: string;
+  email: string;
+  phone?: string;
+  serviceRequested: string;
+  preferredTime?: string;
 }
 
-// Uncomment to run automatically during execution:
-// runDevTests();
+export interface SlotCheckRequest {
+  date: string; // Format: YYYY-MM-DD
+  timeZone?: string;
+}
+
+// 1. CRM Lead Creation Webhook (HubSpot / GoHighLevel / Custom CRM)
+export async function createCRMLead(lead: LeadData): Promise<boolean> {
+  const CRM_WEBHOOK_URL = process.env.CRM_WEBHOOK_URL || "";
+
+  if (!CRM_WEBHOOK_URL) {
+    console.warn("⚠️ CRM Lead Creation: CRM_WEBHOOK_URL is missing in .env");
+    return false;
+  }
+
+  try {
+    const response = await fetch(CRM_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "lead.created",
+        timestamp: new Date().toISOString(),
+        payload: lead
+      })
+    });
+
+    if (response.ok) {
+      console.log(`✅ CRM Lead created successfully for ${lead.email}`);
+      return true;
+    }
+    console.error("❌ CRM Lead creation failed:", await response.text());
+    return false;
+  } catch (error) {
+    console.error("❌ Network error connecting to CRM Webhook:", error);
+    return false;
+  }
+}
+
+// 2. Real-Time Availability Checker (Cal.com / Google Calendar API)
+export async function checkAvailableSlots(request: SlotCheckRequest): Promise<string[]> {
+  const CALENDAR_API_URL = process.env.CALENDAR_API_URL || "";
+
+  if (!CALENDAR_API_URL) {
+    console.warn("⚠️ Slot Check: CALENDAR_API_URL is missing in .env. Returning default availability.");
+    return ["09:00 AM", "01:00 PM", "03:30 PM"];
+  }
+
+  try {
+    const response = await fetch(`${CALENDAR_API_URL}?date=${request.date}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log(`✅ Retrieved available slots for ${request.date}`);
+      return data.slots || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("❌ Failed to fetch calendar slots:", error);
+    return [];
+  }
+}
