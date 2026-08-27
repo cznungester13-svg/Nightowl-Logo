@@ -1,1 +1,2 @@
 - [Stripe sync packaging](stripe-sync-packaging.md) — keep stripe-replit-sync external to API bundles so its runtime SQL migrations remain available.
+- [Public abuse controls](public-abuse-controls.md) — use shared atomic quotas and bounded aggregates; rejected traffic stays outside first-party analytics.

@@ -12,6 +12,10 @@ export interface AnalyticsSummary {
   pageViews: number;
   ctaClicks: number;
   contactSubmissions: number;
+  /** Requests rejected by abuse controls; excluded from first-party analytics. */
+  blockedRequests: number;
+  blockedLeadRequests: number;
+  blockedAnalyticsRequests: number;
   conversionRate: number;
   series: AnalyticsDay[];
 }

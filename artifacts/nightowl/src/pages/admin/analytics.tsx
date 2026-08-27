@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGetAdminAnalytics, GetAdminAnalyticsDays } from "@workspace/api-client-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { MousePointerClick, Eye, UserPlus, TrendingUp } from "lucide-react";
+import { MousePointerClick, Eye, UserPlus, TrendingUp, ShieldAlert } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 export function AdminAnalyticsPage() {
@@ -19,8 +19,8 @@ export function AdminAnalyticsPage() {
     return (
       <div className="space-y-8 animate-pulse">
         <div className="h-8 w-48 bg-card rounded" />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-card rounded-2xl" />)}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+          {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-32 bg-card rounded-2xl" />)}
         </div>
         <div className="h-[400px] bg-card rounded-3xl" />
       </div>
@@ -51,6 +51,7 @@ export function AdminAnalyticsPage() {
     { label: "CTA Clicks", value: analytics.ctaClicks, icon: MousePointerClick, color: "text-accent", bg: "bg-accent/20" },
     { label: "Submissions", value: analytics.contactSubmissions, icon: UserPlus, color: "text-green-400", bg: "bg-green-400/20" },
     { label: "Conversion", value: `${analytics.conversionRate.toFixed(1)}%`, icon: TrendingUp, color: "text-[#d8ad70]", bg: "bg-[#d8ad70]/20" },
+    { label: "Blocked Abuse", value: analytics.blockedRequests, icon: ShieldAlert, color: "text-red-400", bg: "bg-red-400/20" },
   ];
 
   const chartData = analytics.series.map(day => ({
@@ -82,7 +83,7 @@ export function AdminAnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat, i) => (
           <div key={i} className="rounded-3xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between" data-testid={`stat-${stat.label.toLowerCase().replace(" ", "-")}`}>
             <div className="flex justify-between items-start mb-4">
@@ -96,6 +97,9 @@ export function AdminAnalyticsPage() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="rounded-2xl border border-red-400/20 bg-red-400/5 px-5 py-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">{analytics.blockedRequests} requests</strong> were blocked in this window: {analytics.blockedLeadRequests} contact attempts and {analytics.blockedAnalyticsRequests} analytics events. They are excluded from page views, clicks, and submissions.
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -156,6 +160,7 @@ export function AdminAnalyticsPage() {
                 />
                 <Line type="monotone" dataKey="ctaClicks" name="CTA Clicks" stroke="hsl(var(--accent))" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                 <Line type="monotone" dataKey="contactSubmissions" name="Submissions" stroke="#4ade80" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="blockedRequests" name="Blocked abuse" stroke="#f87171" strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

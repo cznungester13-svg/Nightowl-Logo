@@ -18,6 +18,7 @@ export * from './billingStatusPaymentStatus';
 export * from './billingStatusStatus';
 export * from './checkoutSession';
 export * from './checkoutSessionInput';
+export * from './contactChallenge';
 export * from './getAdminAnalyticsDays';
 export * from './getAdminAnalyticsParams';
 export * from './healthStatus';

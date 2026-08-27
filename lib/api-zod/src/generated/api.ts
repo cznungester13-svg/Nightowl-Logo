@@ -32,6 +32,14 @@ export const GetPublicSiteSettingsResponse = zod.object({
 
 
 /**
+ * @summary Get an accessible contact-form bot challenge
+ */
+export const GetContactChallengeResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
  * @summary Submit a NightOwl contact lead
  */
 export const createLeadBodyNameMin = 2;
@@ -42,12 +50,19 @@ export const createLeadBodyEmailMax = 255;
 export const createLeadBodyMessageMin = 10;
 export const createLeadBodyMessageMax = 4000;
 
+export const createLeadBodyWebsiteMax = 200;
+
+export const createLeadBodyBotTokenMin = 20;
+export const createLeadBodyBotTokenMax = 300;
+
 
 
 export const CreateLeadBody = zod.object({
   "name": zod.string().min(createLeadBodyNameMin).max(createLeadBodyNameMax),
   "email": zod.email().max(createLeadBodyEmailMax),
-  "message": zod.string().min(createLeadBodyMessageMin).max(createLeadBodyMessageMax)
+  "message": zod.string().min(createLeadBodyMessageMin).max(createLeadBodyMessageMax),
+  "website": zod.string().max(createLeadBodyWebsiteMax).optional().describe('Leave blank. Hidden honeypot used to reject automated submissions.'),
+  "botToken": zod.string().min(createLeadBodyBotTokenMin).max(createLeadBodyBotTokenMax).describe('Short-lived server-signed contact challenge.')
 })
 
 export const CreateLeadResponse = zod.object({
@@ -253,12 +268,16 @@ export const GetAdminAnalyticsResponse = zod.object({
   "pageViews": zod.int(),
   "ctaClicks": zod.int(),
   "contactSubmissions": zod.int(),
+  "blockedRequests": zod.int().describe('Requests rejected by abuse controls; excluded from first-party analytics.'),
+  "blockedLeadRequests": zod.int(),
+  "blockedAnalyticsRequests": zod.int(),
   "conversionRate": zod.number(),
   "series": zod.array(zod.object({
   "date": zod.coerce.date(),
   "pageViews": zod.int(),
   "ctaClicks": zod.int(),
-  "contactSubmissions": zod.int()
+  "contactSubmissions": zod.int(),
+  "blockedRequests": zod.int()
 }))
 })
 

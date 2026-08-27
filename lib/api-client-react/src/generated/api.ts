@@ -28,6 +28,7 @@ import type {
   BillingStatus,
   CheckoutSession,
   CheckoutSessionInput,
+  ContactChallenge,
   GetAdminAnalyticsParams,
   HealthStatus,
   Lead,
@@ -220,6 +221,83 @@ export function useGetPublicSiteSettings<TData = Awaited<ReturnType<typeof getPu
 
 
 
+export const getGetContactChallengeUrl = () => {
+
+
+
+
+  return `/api/contact-challenge`
+}
+
+/**
+ * @summary Get an accessible contact-form bot challenge
+ */
+export const getContactChallenge = async ( options?: Parameters<typeof customFetch>[1]): Promise<ContactChallenge> => {
+
+  return customFetch<ContactChallenge>(getGetContactChallengeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetContactChallengeQueryKey = () => {
+    return [
+    `/api/contact-challenge`
+    ] as const;
+    }
+
+
+export const getGetContactChallengeQueryOptions = <TData = Awaited<ReturnType<typeof getContactChallenge>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getContactChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetContactChallengeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContactChallenge>>> = ({ signal }) => getContactChallenge({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContactChallenge>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetContactChallengeQueryResult = NonNullable<Awaited<ReturnType<typeof getContactChallenge>>>
+export type GetContactChallengeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get an accessible contact-form bot challenge
+ */
+
+export function useGetContactChallenge<TData = Awaited<ReturnType<typeof getContactChallenge>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getContactChallenge>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetContactChallengeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getCreateLeadUrl = () => {
 
 
@@ -246,7 +324,7 @@ export const createLead = async (leadInput: LeadInput, options?: Parameters<type
 
 
 
-export const getCreateLeadMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateLeadMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLead>>, TError,{data: BodyType<LeadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createLead>>, TError,{data: BodyType<LeadInput>}, TContext> => {
 
@@ -275,12 +353,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateLeadMutationResult = NonNullable<Awaited<ReturnType<typeof createLead>>>
     export type CreateLeadMutationBody = BodyType<LeadInput>
-    export type CreateLeadMutationError = ErrorType<unknown>
+    export type CreateLeadMutationError = ErrorType<void>
 
     /**
  * @summary Submit a NightOwl contact lead
  */
-export const useCreateLead = <TError = ErrorType<unknown>,
+export const useCreateLead = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLead>>, TError,{data: BodyType<LeadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createLead>>,
@@ -317,7 +395,7 @@ export const createAnalyticsEvent = async (analyticsEventInput: AnalyticsEventIn
 
 
 
-export const getCreateAnalyticsEventMutationOptions = <TError = ErrorType<unknown>,
+export const getCreateAnalyticsEventMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAnalyticsEvent>>, TError,{data: BodyType<AnalyticsEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createAnalyticsEvent>>, TError,{data: BodyType<AnalyticsEventInput>}, TContext> => {
 
@@ -346,12 +424,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateAnalyticsEventMutationResult = NonNullable<Awaited<ReturnType<typeof createAnalyticsEvent>>>
     export type CreateAnalyticsEventMutationBody = BodyType<AnalyticsEventInput>
-    export type CreateAnalyticsEventMutationError = ErrorType<unknown>
+    export type CreateAnalyticsEventMutationError = ErrorType<void>
 
     /**
  * @summary Record a privacy-conscious site event
  */
-export const useCreateAnalyticsEvent = <TError = ErrorType<unknown>,
+export const useCreateAnalyticsEvent = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAnalyticsEvent>>, TError,{data: BodyType<AnalyticsEventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createAnalyticsEvent>>,

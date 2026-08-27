@@ -22,6 +22,7 @@ import { Link } from 'wouter';
 import { useUser } from '@clerk/react';
 import { 
   useGetPublicSiteSettings, 
+  useGetContactChallenge,
   useCreateLead, 
   useCreateAnalyticsEvent,
   useCreateCheckoutSession,
@@ -71,6 +72,7 @@ export function Home() {
   const { isSignedIn, user } = useUser();
   
   const { data: settings } = useGetPublicSiteSettings();
+  const { data: contactChallenge, refetch: refreshContactChallenge } = useGetContactChallenge();
   const createLead = useCreateLead();
   const createAnalyticsEvent = useCreateAnalyticsEvent();
   const createCheckoutSession = useCreateCheckoutSession();
@@ -116,16 +118,30 @@ export function Home() {
       setFormError('Please provide a bit more detail about your business (min 10 characters).');
       return;
     }
+    if (!contactChallenge?.token) {
+      setFormError('Contact protection is still loading. Please wait a moment and try again.');
+      return;
+    }
     
     setFormError('');
     
-    createLead.mutate({ data: { name, email, message } }, {
+    createLead.mutate({ data: {
+      name,
+      email,
+      message,
+      website: String(data.get('website') || ''),
+      botToken: contactChallenge.token,
+    } }, {
       onSuccess: () => {
         setSubmitted(true);
         form.reset();
+        void refreshContactChallenge();
       },
-      onError: () => {
-        setFormError('Something went wrong submitting your note. Please try again.');
+      onError: (error) => {
+        const status = (error as { status?: number }).status;
+        setFormError(status === 429
+          ? 'We have received a lot of requests. Please wait a few minutes and try again.'
+          : 'Something went wrong submitting your note. Please try again.');
       }
     });
   };
@@ -412,7 +428,7 @@ export function Home() {
           <div className="nightowl-shell relative grid gap-12 md:grid-cols-[.85fr_1.15fr] md:items-start">
             <div><SectionEyebrow>Come say hello</SectionEyebrow><h2 className="font-display text-4xl font-semibold leading-[1.02] tracking-[-.06em] text-[#273149] md:text-6xl">Ready to leave<br />work at <span className="text-[#F7F2E8]">work?</span></h2><p className="mt-6 max-w-sm text-[15px] leading-7 text-[#523f3b]">Tell us a little about your business. We’ll show you what a quieter night could look like.</p><div className="mt-8 flex items-center gap-3 text-sm font-semibold text-[#523f3b]"><Mail size={17} /> {settings?.contactEmail || "hello@nightowl.work"}</div></div>
             <div className="rounded-3xl border border-[#d66f54] bg-[#f7b09b]/45 p-6 md:p-8">
-              {submitted ? <div className="flex min-h-[330px] flex-col items-center justify-center text-center"><span className="grid h-14 w-14 place-items-center rounded-full bg-[#273149] text-[#9ed3ca]"><Check size={25} /></span><h3 className="mt-6 font-display text-3xl font-semibold tracking-[-.05em] text-[#273149]">You’re on the list.</h3><p className="mt-3 max-w-xs text-sm leading-6 text-[#523f3b]">Thanks for reaching out. We’ll be in touch soon with a little more quiet.</p><button type="button" onClick={() => setSubmitted(false)} className="mt-7 text-sm font-bold underline underline-offset-4" data-testid="button-contact-reset">Send another note</button></div> : <form onSubmit={submitContact} noValidate><div className="mb-6"><p className="font-display text-2xl font-semibold tracking-[-.04em] text-[#273149]">Let’s make a plan.</p><p className="mt-1 text-xs text-[#694942]">Usually takes less than two minutes.</p></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-bold text-[#523f3b]">Your name<input required name="name" className="form-input mt-2" placeholder="Maya Chen" data-testid="input-contact-name" disabled={createLead.isPending} /></label><label className="text-xs font-bold text-[#523f3b]">Work email<input required type="email" name="email" className="form-input mt-2" placeholder="maya@studio.com" data-testid="input-contact-email" disabled={createLead.isPending} /></label></div><label className="mt-4 block text-xs font-bold text-[#523f3b]">Tell us about your business <textarea required name="message" rows={4} className="form-input mt-2 resize-none" placeholder="I run a small design studio..." data-testid="input-contact-message" disabled={createLead.isPending} /></label>{formError && <p className="mt-3 text-xs font-bold text-[#8d3328]" role="alert" data-testid="status-contact-error">{formError}</p>}<button type="submit" disabled={createLead.isPending} className="mt-5 inline-flex items-center rounded-xl bg-[#273149] px-5 py-3.5 text-sm font-bold text-[#F7F2E8] transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none" data-testid="button-contact-submit">{createLead.isPending ? <Loader2 className="animate-spin mr-2" size={15} /> : null}Send my note {!createLead.isPending && <Send className="ml-2" size={15} />}</button><p className="mt-4 flex items-center gap-1.5 text-[10px] text-[#694942]"><ShieldCheck size={13} /> We’ll only use this to reply to you.</p></form>}
+              {submitted ? <div className="flex min-h-[330px] flex-col items-center justify-center text-center"><span className="grid h-14 w-14 place-items-center rounded-full bg-[#273149] text-[#9ed3ca]"><Check size={25} /></span><h3 className="mt-6 font-display text-3xl font-semibold tracking-[-.05em] text-[#273149]">You’re on the list.</h3><p className="mt-3 max-w-xs text-sm leading-6 text-[#523f3b]">Thanks for reaching out. We’ll be in touch soon with a little more quiet.</p><button type="button" onClick={() => setSubmitted(false)} className="mt-7 text-sm font-bold underline underline-offset-4" data-testid="button-contact-reset">Send another note</button></div> : <form onSubmit={submitContact} noValidate><div className="mb-6"><p className="font-display text-2xl font-semibold tracking-[-.04em] text-[#273149]">Let’s make a plan.</p><p className="mt-1 text-xs text-[#694942]">Usually takes less than two minutes.</p></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-bold text-[#523f3b]">Your name<input required name="name" className="form-input mt-2" placeholder="Maya Chen" data-testid="input-contact-name" disabled={createLead.isPending} /></label><label className="text-xs font-bold text-[#523f3b]">Work email<input required type="email" name="email" className="form-input mt-2" placeholder="maya@studio.com" data-testid="input-contact-email" disabled={createLead.isPending} /></label></div><div aria-hidden="true" className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden"><label htmlFor="contact-website">Website</label><input id="contact-website" name="website" tabIndex={-1} autoComplete="off" /></div><label className="mt-4 block text-xs font-bold text-[#523f3b]">Tell us about your business <textarea required name="message" rows={4} className="form-input mt-2 resize-none" placeholder="I run a small design studio..." data-testid="input-contact-message" disabled={createLead.isPending} /></label>{formError && <p className="mt-3 text-xs font-bold text-[#8d3328]" role="alert" data-testid="status-contact-error">{formError}</p>}<button type="submit" disabled={createLead.isPending || !contactChallenge} className="mt-5 inline-flex items-center rounded-xl bg-[#273149] px-5 py-3.5 text-sm font-bold text-[#F7F2E8] transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:pointer-events-none" data-testid="button-contact-submit">{createLead.isPending ? <Loader2 className="animate-spin mr-2" size={15} /> : null}Send my note {!createLead.isPending && <Send className="ml-2" size={15} />}</button><p className="mt-4 flex items-center gap-1.5 text-[10px] text-[#694942]"><ShieldCheck size={13} /> We’ll only use this to reply to you.</p></form>}
             </div>
           </div>
         </section>

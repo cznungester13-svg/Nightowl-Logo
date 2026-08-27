@@ -13,6 +13,26 @@ import { WebhookHandlers } from "./webhookHandlers";
 
 const app: Express = express();
 
+// Trust only loopback/private ingress proxies. This lets Express recover the
+// public client address without accepting spoofed forwarding headers from a
+// request that reaches the service directly.
+app.set("trust proxy", (address: string) => {
+  const normalized = address.replace(/^::ffff:/, "");
+  if (
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized.startsWith("10.") ||
+    normalized.startsWith("192.168.") ||
+    normalized.startsWith("fc") ||
+    normalized.startsWith("fd")
+  ) {
+    return true;
+  }
+
+  const [first, second] = normalized.split(".").map(Number);
+  return first === 172 && second >= 16 && second <= 31;
+});
+
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),

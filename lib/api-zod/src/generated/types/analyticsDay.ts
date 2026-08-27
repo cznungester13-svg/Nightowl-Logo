@@ -11,4 +11,5 @@ export interface AnalyticsDay {
   pageViews: number;
   ctaClicks: number;
   contactSubmissions: number;
+  blockedRequests: number;
 }

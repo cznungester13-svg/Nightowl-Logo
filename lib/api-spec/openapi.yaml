@@ -40,6 +40,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SiteSettings"
+  /contact-challenge:
+    get:
+      operationId: getContactChallenge
+      tags: [public]
+      summary: Get an accessible contact-form bot challenge
+      responses:
+        "200":
+          description: Short-lived challenge bound to the requesting client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactChallenge"
   /leads:
     post:
       operationId: createLead
@@ -58,6 +70,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Lead"
+        "400":
+          description: Invalid or rejected submission
+        "429":
+          description: Lead rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
   /analytics/events:
     post:
       operationId: createAnalyticsEvent
@@ -72,6 +92,14 @@ paths:
       responses:
         "204":
           description: Event recorded
+        "400":
+          description: Invalid event
+        "429":
+          description: Analytics rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
   /checkout/session:
     post:
       operationId: createCheckoutSession
@@ -284,7 +312,7 @@ components:
           format: date-time
     LeadInput:
       type: object
-      required: [name, email, message]
+      required: [name, email, message, botToken]
       properties:
         name:
           type: string
@@ -298,6 +326,21 @@ components:
           type: string
           minLength: 10
           maxLength: 4000
+        website:
+          type: string
+          maxLength: 200
+          description: Leave blank. Hidden honeypot used to reject automated submissions.
+        botToken:
+          type: string
+          minLength: 20
+          maxLength: 300
+          description: Short-lived server-signed contact challenge.
+    ContactChallenge:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
     LeadUpdate:
       type: object
       required: [status]
@@ -366,7 +409,7 @@ components:
           maxLength: 120
     AnalyticsDay:
       type: object
-      required: [date, pageViews, ctaClicks, contactSubmissions]
+      required: [date, pageViews, ctaClicks, contactSubmissions, blockedRequests]
       properties:
         date:
           type: string
@@ -377,9 +420,11 @@ components:
           type: integer
         contactSubmissions:
           type: integer
+        blockedRequests:
+          type: integer
     AnalyticsSummary:
       type: object
-      required: [days, pageViews, ctaClicks, contactSubmissions, conversionRate, series]
+      required: [days, pageViews, ctaClicks, contactSubmissions, blockedRequests, blockedLeadRequests, blockedAnalyticsRequests, conversionRate, series]
       properties:
         days:
           type: integer
@@ -388,6 +433,13 @@ components:
         ctaClicks:
           type: integer
         contactSubmissions:
+          type: integer
+        blockedRequests:
+          type: integer
+          description: Requests rejected by abuse controls; excluded from first-party analytics.
+        blockedLeadRequests:
+          type: integer
+        blockedAnalyticsRequests:
           type: integer
         conversionRate:
           type: number

@@ -42,6 +42,21 @@ export interface LeadInput {
      * @maxLength 4000
      */
   message: string;
+  /**
+     * Leave blank. Hidden honeypot used to reject automated submissions.
+     * @maxLength 200
+     */
+  website?: string;
+  /**
+     * Short-lived server-signed contact challenge.
+     * @minLength 20
+     * @maxLength 300
+     */
+  botToken: string;
+}
+
+export interface ContactChallenge {
+  token: string;
 }
 
 export interface LeadUpdate {
@@ -108,6 +123,7 @@ export interface AnalyticsDay {
   pageViews: number;
   ctaClicks: number;
   contactSubmissions: number;
+  blockedRequests: number;
 }
 
 export interface AnalyticsSummary {
@@ -115,6 +131,10 @@ export interface AnalyticsSummary {
   pageViews: number;
   ctaClicks: number;
   contactSubmissions: number;
+  /** Requests rejected by abuse controls; excluded from first-party analytics. */
+  blockedRequests: number;
+  blockedLeadRequests: number;
+  blockedAnalyticsRequests: number;
   conversionRate: number;
   series: AnalyticsDay[];
 }

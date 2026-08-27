@@ -1,4 +1,5 @@
 import {
+  abuseCountersTable,
   analyticsEventsTable,
   db,
   leadsTable,
@@ -185,10 +186,21 @@ router.get("/admin/analytics", async (req, res): Promise<void> => {
     .from(analyticsEventsTable)
     .where(gte(analyticsEventsTable.createdAt, start))
     .orderBy(analyticsEventsTable.createdAt);
+  const blockedAbuse = await db
+    .select()
+    .from(abuseCountersTable)
+    .where(gte(abuseCountersTable.bucketDate, start.toISOString().slice(0, 10)))
+    .orderBy(abuseCountersTable.bucketDate);
 
   const buckets = new Map<
     string,
-    { date: string; pageViews: number; ctaClicks: number; contactSubmissions: number }
+    {
+      date: string;
+      pageViews: number;
+      ctaClicks: number;
+      contactSubmissions: number;
+      blockedRequests: number;
+    }
   >();
   for (let index = 0; index < days; index += 1) {
     const date = new Date(start);
@@ -199,6 +211,7 @@ router.get("/admin/analytics", async (req, res): Promise<void> => {
       pageViews: 0,
       ctaClicks: 0,
       contactSubmissions: 0,
+      blockedRequests: 0,
     });
   }
   for (const event of events) {
@@ -208,6 +221,10 @@ router.get("/admin/analytics", async (req, res): Promise<void> => {
     if (event.type === "cta_click") bucket.ctaClicks += 1;
     if (event.type === "contact_submission") bucket.contactSubmissions += 1;
   }
+  for (const event of blockedAbuse) {
+    const bucket = buckets.get(event.bucketDate);
+    if (bucket) bucket.blockedRequests += event.count;
+  }
 
   const series = [...buckets.values()];
   const pageViews = series.reduce((sum, day) => sum + day.pageViews, 0);
@@ -216,12 +233,23 @@ router.get("/admin/analytics", async (req, res): Promise<void> => {
     (sum, day) => sum + day.contactSubmissions,
     0,
   );
+  const blockedRequests = series.reduce(
+    (sum, day) => sum + day.blockedRequests,
+    0,
+  );
   res.json(
     GetAdminAnalyticsResponse.parse({
       days,
       pageViews,
       ctaClicks,
       contactSubmissions,
+      blockedRequests,
+      blockedLeadRequests: blockedAbuse.filter(
+        (event) => event.endpoint === "leads",
+      ).reduce((sum, event) => sum + event.count, 0),
+      blockedAnalyticsRequests: blockedAbuse.filter(
+        (event) => event.endpoint === "analytics_events",
+      ).reduce((sum, event) => sum + event.count, 0),
       conversionRate: pageViews ? (contactSubmissions / pageViews) * 100 : 0,
       series,
     }),
