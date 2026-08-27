@@ -7,7 +7,6 @@ import {
 import {
   GetAdminAnalyticsQueryParams,
   GetAdminAnalyticsResponse,
-  GetAdminBillingStatusResponse,
   GetAdminLeadParams,
   GetAdminLeadResponse,
   GetAdminMeResponse,
@@ -24,7 +23,6 @@ import {
 import { and, desc, eq, gte, ilike, or, type SQL } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { getAdminIdentity, requireAdmin } from "../middlewares/admin-auth";
-import { getNightOwlPrice } from "../lib/stripeCatalog";
 import { getOrCreateSettings } from "./public";
 
 const router: IRouter = Router();
@@ -228,36 +226,6 @@ router.get("/admin/analytics", async (req, res): Promise<void> => {
       series,
     }),
   );
-});
-
-router.get("/admin/billing-status", async (_req, res): Promise<void> => {
-  try {
-    const price = await getNightOwlPrice();
-    res.json(
-      GetAdminBillingStatusResponse.parse({
-        provider: "Stripe",
-        connected: true,
-        monthlyPrice: price.unit_amount / 100,
-        planName: "NightOwl Launch Plan",
-        message:
-          "Stripe checkout, recurring subscriptions, webhook synchronization, and the customer portal are connected.",
-      }),
-    );
-  } catch (error) {
-    const settings = await getOrCreateSettings();
-    res.json(
-      GetAdminBillingStatusResponse.parse({
-        provider: "Stripe",
-        connected: false,
-        monthlyPrice: settings.monthlyPrice,
-        planName: "NightOwl Launch Plan",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Stripe billing is temporarily unavailable.",
-      }),
-    );
-  }
 });
 
 export default router;

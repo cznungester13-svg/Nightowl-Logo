@@ -2,45 +2,32 @@ import Stripe from "stripe";
 
 async function getStripeSecretKey(): Promise<string> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const token = process.env.REPL_IDENTITY
+  const xReplitToken = process.env.REPL_IDENTITY
     ? `repl ${process.env.REPL_IDENTITY}`
     : process.env.WEB_REPL_RENEWAL
       ? `depl ${process.env.WEB_REPL_RENEWAL}`
       : null;
-
-  if (!hostname || !token) {
-    throw new Error(
-      "Stripe is not available. Connect the Stripe integration in Replit first.",
-    );
+  if (!hostname || !xReplitToken) {
+    throw new Error("The Stripe integration is not available in this environment.");
   }
 
   const response = await fetch(
     `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
     {
-      headers: {
-        Accept: "application/json",
-        X_REPLIT_TOKEN: token,
-      },
+      headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken },
       signal: AbortSignal.timeout(10_000),
     },
   );
-
   if (!response.ok) {
-    throw new Error(
-      `Unable to load Stripe credentials (${response.status} ${response.statusText}).`,
-    );
+    throw new Error(`Unable to fetch Stripe credentials: ${response.status}`);
   }
 
   const data = (await response.json()) as {
-    items?: Array<{ settings?: { secret_key?: string; secret?: string } }>;
+    items?: Array<{ settings?: { secret?: string; secret_key?: string } }>;
   };
   const settings = data.items?.[0]?.settings;
-  const secretKey = settings?.secret_key ?? settings?.secret;
-
-  if (!secretKey) {
-    throw new Error("The Stripe integration is missing its secret key.");
-  }
-
+  const secretKey = settings?.secret ?? settings?.secret_key;
+  if (!secretKey) throw new Error("The Stripe integration has no secret key.");
   return secretKey;
 }
 

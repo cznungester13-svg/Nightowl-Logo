@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface BillingPortalInput {
-  /**
-     * @minLength 3
-     * @maxLength 200
-     */
-  sessionId: string;
+export interface CheckoutSessionInput {
+  /** @maxLength 255 */
+  email: string;
 }

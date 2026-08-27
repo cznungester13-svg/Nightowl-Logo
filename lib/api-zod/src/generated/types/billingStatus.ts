@@ -5,11 +5,19 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BillingStatusPaymentStatus } from './billingStatusPaymentStatus';
+import type { BillingStatusStatus } from './billingStatusStatus';
 
 export interface BillingStatus {
   provider: string;
   connected: boolean;
   monthlyPrice: number;
   planName: string;
+  status: BillingStatusStatus;
+  paymentStatus: BillingStatusPaymentStatus;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  hasCustomer: boolean;
+  portalAvailable: boolean;
   message: string;
 }

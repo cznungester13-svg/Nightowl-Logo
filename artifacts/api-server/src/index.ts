@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient";
+import { getTrustedAppOrigin } from "./appOrigin";
 
 const rawPort = process.env["PORT"];
 
@@ -17,34 +18,20 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-async function initializeStripe(): Promise<void> {
+async function initStripe(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for Stripe synchronization.");
-  }
+  if (!databaseUrl) throw new Error("DATABASE_URL is required for Stripe");
 
-  logger.info("Initializing Stripe synchronization");
   await runMigrations({ databaseUrl });
-
   const stripeSync = await getStripeSync();
-  const publicDomain =
-    process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() ||
-    process.env.REPLIT_DEV_DOMAIN?.trim();
-
-  if (!publicDomain) {
-    throw new Error("A Replit domain is required to configure Stripe webhooks.");
-  }
-
-  const webhook = await stripeSync.findOrCreateManagedWebhook(
-    `https://${publicDomain}/api/stripe/webhook`,
+  await stripeSync.findOrCreateManagedWebhook(
+    `${getTrustedAppOrigin()}/api/stripe/webhook`,
   );
-  logger.info({ webhookUrl: webhook.url }, "Stripe webhook configured");
-
   await stripeSync.syncBackfill();
-  logger.info("Stripe data synchronized");
+  logger.info("Stripe schema and data ready");
 }
 
-await initializeStripe();
+await initStripe();
 
 app.listen(port, (err) => {
   if (err) {

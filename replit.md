@@ -10,8 +10,8 @@ NightOwl is an AI operations landing site with a secure command center for manag
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes
-- Required env: `DATABASE_URL`, Clerk keys, and `NIGHTOWL_ADMIN_EMAILS` (comma-separated allowlist)
-- Stripe is provided by the connected Replit integration; seed the catalog with `pnpm --filter @workspace/scripts run seed:stripe`
+- Required env: `DATABASE_URL`, Clerk keys, `NIGHTOWL_ADMIN_EMAILS` (comma-separated allowlist), and HTTPS `NIGHTOWL_APP_URL`
+- Stripe is provided by the connected Replit integration; seed the catalog with `pnpm --filter @workspace/scripts run seed:nightowl-stripe`
 
 ## Stack
 
@@ -39,6 +39,7 @@ NightOwl is an AI operations landing site with a secure command center for manag
 - The API start command applies the Drizzle schema before serving so deployment databases are ready.
 - Stripe is the source of truth for products, prices, customers, subscriptions, and invoices. `stripe-replit-sync` mirrors Stripe data into its managed PostgreSQL schema.
 - The API registers a managed Stripe webhook and runs a Stripe backfill before it begins serving requests.
+- Checkout ownership is bound to the authenticated Clerk administrator, and redirects/webhooks use the configured trusted app origin.
 
 ## Product
 

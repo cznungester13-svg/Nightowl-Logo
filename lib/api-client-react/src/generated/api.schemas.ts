@@ -134,47 +134,55 @@ export interface AdminOverview {
   recentLeads: Lead[];
 }
 
+export type BillingStatusStatus = typeof BillingStatusStatus[keyof typeof BillingStatusStatus];
+
+
+export const BillingStatusStatus = {
+  not_started: 'not_started',
+  incomplete: 'incomplete',
+  incomplete_expired: 'incomplete_expired',
+  trialing: 'trialing',
+  active: 'active',
+  past_due: 'past_due',
+  canceled: 'canceled',
+  unpaid: 'unpaid',
+  paused: 'paused',
+} as const;
+
+export type BillingStatusPaymentStatus = typeof BillingStatusPaymentStatus[keyof typeof BillingStatusPaymentStatus];
+
+
+export const BillingStatusPaymentStatus = {
+  unpaid: 'unpaid',
+  paid: 'paid',
+  failed: 'failed',
+} as const;
+
 export interface BillingStatus {
   provider: string;
   connected: boolean;
   monthlyPrice: number;
   planName: string;
+  status: BillingStatusStatus;
+  paymentStatus: BillingStatusPaymentStatus;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  hasCustomer: boolean;
+  portalAvailable: boolean;
   message: string;
 }
 
-export type BillingPriceInterval = typeof BillingPriceInterval[keyof typeof BillingPriceInterval];
-
-
-export const BillingPriceInterval = {
-  month: 'month',
-  year: 'year',
-} as const;
-
-export interface BillingPrice {
-  id: string;
-  amount: number;
-  currency: string;
-  interval: BillingPriceInterval;
-}
-
-export interface CheckoutInput {
-  /**
-     * @minLength 3
-     * @maxLength 120
-     */
-  priceId: string;
+export interface CheckoutSessionInput {
+  /** @maxLength 255 */
+  email: string;
 }
 
 export interface CheckoutSession {
   url: string;
 }
 
-export interface BillingPortalInput {
-  /**
-     * @minLength 3
-     * @maxLength 200
-     */
-  sessionId: string;
+export interface BillingPortal {
+  url: string;
 }
 
 export type ListAdminLeadsParams = {
@@ -194,4 +202,3 @@ export const GetAdminAnalyticsDays = {
   NUMBER_30: 30,
   NUMBER_90: 90,
 } as const;
-

@@ -9,6 +9,7 @@ import { queryClient } from '@/lib/queryClient';
 
 // Pages
 import { Home } from '@/pages/home';
+import { BillingCancelPage, BillingSuccessPage } from '@/pages/billing-status';
 import { SignInPage } from '@/pages/auth/sign-in';
 import { SignUpPage } from '@/pages/auth/sign-up';
 import { AdminOverviewPage } from '@/pages/admin/overview';
@@ -17,7 +18,6 @@ import { AdminLeadDetailPage } from '@/pages/admin/leads/detail';
 import { AdminSettingsPage } from '@/pages/admin/settings';
 import { AdminAnalyticsPage } from '@/pages/admin/analytics';
 import { AdminBillingPage } from '@/pages/admin/billing';
-import { CheckoutCancelPage, CheckoutSuccessPage } from '@/pages/checkout-status';
 
 // Layouts and Auth
 import { ClerkProviderWithRoutes } from '@/components/auth/clerk-provider';
@@ -38,8 +38,8 @@ function Router() {
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/checkout/success" component={CheckoutSuccessPage} />
-          <Route path="/checkout/cancel" component={CheckoutCancelPage} />
+          <Route path="/billing/success" component={BillingSuccessPage} />
+          <Route path="/billing/cancel" component={BillingCancelPage} />
           
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />

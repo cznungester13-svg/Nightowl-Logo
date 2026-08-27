@@ -6,10 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CheckoutInput {
-  /**
-     * @minLength 3
-     * @maxLength 120
-     */
-  priceId: string;
+export interface BillingPortal {
+  url: string;
 }

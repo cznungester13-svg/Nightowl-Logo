@@ -26,3 +26,9 @@ channel = "stable-25_05"
 
 [userenv.shared]
 NIGHTOWL_ADMIN_EMAILS = "candygirardot@nightowlagent.org"
+
+[userenv.production]
+NIGHTOWL_APP_URL = "https://www.nightowlagent.org"
+
+[userenv.development]
+NIGHTOWL_APP_URL = "https://www.nightowlagent.org"

@@ -77,46 +77,17 @@ export const CreateAnalyticsEventResponse = zod.void()
 
 
 /**
- * @summary Get the active NightOwl subscription price
+ * @summary Create a secure Stripe subscription checkout session for the signed-in admin
  */
-export const GetPublicBillingPriceResponse = zod.object({
-  "id": zod.string(),
-  "amount": zod.int(),
-  "currency": zod.string(),
-  "interval": zod.enum(['month', 'year'])
-})
-
-
-/**
- * @summary Create a Stripe subscription checkout session
- */
-export const createCheckoutSessionBodyPriceIdMin = 3;
-export const createCheckoutSessionBodyPriceIdMax = 120;
+export const createCheckoutSessionBodyEmailMax = 255;
 
 
 
 export const CreateCheckoutSessionBody = zod.object({
-  "priceId": zod.string().min(createCheckoutSessionBodyPriceIdMin).max(createCheckoutSessionBodyPriceIdMax)
+  "email": zod.email().max(createCheckoutSessionBodyEmailMax)
 })
 
 export const CreateCheckoutSessionResponse = zod.object({
-  "url": zod.url()
-})
-
-
-/**
- * @summary Open the Stripe customer billing portal for a completed checkout
- */
-export const createBillingPortalSessionBodySessionIdMin = 3;
-export const createBillingPortalSessionBodySessionIdMax = 200;
-
-
-
-export const CreateBillingPortalSessionBody = zod.object({
-  "sessionId": zod.string().min(createBillingPortalSessionBodySessionIdMin).max(createBillingPortalSessionBodySessionIdMax)
-})
-
-export const CreateBillingPortalSessionResponse = zod.object({
   "url": zod.url()
 })
 
@@ -300,7 +271,21 @@ export const GetAdminBillingStatusResponse = zod.object({
   "connected": zod.boolean(),
   "monthlyPrice": zod.int(),
   "planName": zod.string(),
+  "status": zod.enum(['not_started', 'incomplete', 'incomplete_expired', 'trialing', 'active', 'past_due', 'canceled', 'unpaid', 'paused']),
+  "paymentStatus": zod.enum(['unpaid', 'paid', 'failed']),
+  "currentPeriodEnd": zod.coerce.date().nullable(),
+  "cancelAtPeriodEnd": zod.boolean(),
+  "hasCustomer": zod.boolean(),
+  "portalAvailable": zod.boolean(),
   "message": zod.string()
+})
+
+
+/**
+ * @summary Create a Stripe customer portal session
+ */
+export const CreateAdminBillingPortalResponse = zod.object({
+  "url": zod.url()
 })
 
 

@@ -72,50 +72,20 @@ paths:
       responses:
         "204":
           description: Event recorded
-  /billing/price:
-    get:
-      operationId: getPublicBillingPrice
-      tags: [public]
-      summary: Get the active NightOwl subscription price
-      responses:
-        "200":
-          description: Active recurring price
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BillingPrice"
-  /billing/checkout:
+  /checkout/session:
     post:
       operationId: createCheckoutSession
-      tags: [public]
-      summary: Create a Stripe subscription checkout session
+      tags: [admin]
+      summary: Create a secure Stripe subscription checkout session for the signed-in admin
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CheckoutInput"
+              $ref: "#/components/schemas/CheckoutSessionInput"
       responses:
         "200":
-          description: Checkout session
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CheckoutSession"
-  /billing/portal:
-    post:
-      operationId: createBillingPortalSession
-      tags: [public]
-      summary: Open the Stripe customer billing portal for a completed checkout
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BillingPortalInput"
-      responses:
-        "200":
-          description: Billing portal session
+          description: Stripe Checkout URL
           content:
             application/json:
               schema:
@@ -260,6 +230,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BillingStatus"
+  /admin/billing-portal:
+    post:
+      operationId: createAdminBillingPortal
+      tags: [admin]
+      summary: Create a Stripe customer portal session
+      responses:
+        "200":
+          description: Stripe customer portal URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingPortal"
 components:
   parameters:
     LeadId:
@@ -444,7 +426,7 @@ components:
             $ref: "#/components/schemas/Lead"
     BillingStatus:
       type: object
-      required: [provider, connected, monthlyPrice, planName, message]
+      required: [provider, connected, monthlyPrice, planName, status, paymentStatus, currentPeriodEnd, cancelAtPeriodEnd, hasCustomer, portalAvailable, message]
       properties:
         provider:
           type: string
@@ -454,29 +436,32 @@ components:
           type: integer
         planName:
           type: string
+        status:
+          type: string
+          enum: [not_started, incomplete, incomplete_expired, trialing, active, past_due, canceled, unpaid, paused]
+        paymentStatus:
+          type: string
+          enum: [unpaid, paid, failed]
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+        cancelAtPeriodEnd:
+          type: boolean
+        hasCustomer:
+          type: boolean
+        portalAvailable:
+          type: boolean
         message:
           type: string
-    BillingPrice:
+    CheckoutSessionInput:
       type: object
-      required: [id, amount, currency, interval]
+      required: [email]
       properties:
-        id:
+        email:
           type: string
-        amount:
-          type: integer
-        currency:
-          type: string
-        interval:
-          type: string
-          enum: [month, year]
-    CheckoutInput:
-      type: object
-      required: [priceId]
-      properties:
-        priceId:
-          type: string
-          minLength: 3
-          maxLength: 120
+          format: email
+          maxLength: 255
     CheckoutSession:
       type: object
       required: [url]
@@ -484,12 +469,11 @@ components:
         url:
           type: string
           format: uri
-    BillingPortalInput:
+    BillingPortal:
       type: object
-      required: [sessionId]
+      required: [url]
       properties:
-        sessionId:
+        url:
           type: string
-          minLength: 3
-          maxLength: 200
+          format: uri
 

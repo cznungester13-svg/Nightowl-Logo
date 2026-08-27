@@ -1,22 +1,20 @@
 import Stripe from "stripe";
 import { StripeSync } from "stripe-replit-sync";
 
-type StripeCredentials = {
+async function getStripeCredentials(): Promise<{
   secretKey: string;
   webhookSecret?: string;
-};
-
-async function getStripeCredentials(): Promise<StripeCredentials> {
+}> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const token = process.env.REPL_IDENTITY
+  const xReplitToken = process.env.REPL_IDENTITY
     ? `repl ${process.env.REPL_IDENTITY}`
     : process.env.WEB_REPL_RENEWAL
       ? `depl ${process.env.WEB_REPL_RENEWAL}`
       : null;
 
-  if (!hostname || !token) {
+  if (!hostname || !xReplitToken) {
     throw new Error(
-      "Stripe is not available. Connect the Stripe integration in Replit first.",
+      "Missing Replit connector environment. Connect Stripe in the Integrations tab.",
     );
   }
 
@@ -25,7 +23,7 @@ async function getStripeCredentials(): Promise<StripeCredentials> {
     {
       headers: {
         Accept: "application/json",
-        X_REPLIT_TOKEN: token,
+        X_REPLIT_TOKEN: xReplitToken,
       },
       signal: AbortSignal.timeout(10_000),
     },
@@ -33,32 +31,30 @@ async function getStripeCredentials(): Promise<StripeCredentials> {
 
   if (!response.ok) {
     throw new Error(
-      `Unable to load Stripe credentials (${response.status} ${response.statusText}).`,
+      `Failed to fetch Stripe credentials: ${response.status} ${response.statusText}`,
     );
   }
 
   const data = (await response.json()) as {
     items?: Array<{
       settings?: {
-        secret_key?: string;
         secret?: string;
+        secret_key?: string;
         webhook_secret?: string;
       };
     }>;
   };
   const settings = data.items?.[0]?.settings;
-
-  const secretKey = settings?.secret_key ?? settings?.secret;
-
+  const secretKey = settings?.secret ?? settings?.secret_key;
   if (!secretKey) {
     throw new Error(
-      "The Stripe integration is connected but does not expose a secret key.",
+      "Stripe is not connected or is missing a secret key. Connect Stripe first.",
     );
   }
 
   return {
     secretKey,
-    webhookSecret: settings.webhook_secret,
+    webhookSecret: settings?.webhook_secret,
   };
 }
 
@@ -70,7 +66,7 @@ export async function getUncachableStripeClient(): Promise<Stripe> {
 export async function getStripeSync(): Promise<StripeSync> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for Stripe synchronization.");
+    throw new Error("DATABASE_URL environment variable is required");
   }
 
   const { secretKey, webhookSecret } = await getStripeCredentials();
