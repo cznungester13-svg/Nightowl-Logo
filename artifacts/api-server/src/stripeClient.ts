@@ -18,7 +18,7 @@ async function getStripeCredentials(): Promise<{
     );
   }
 
-  const response = await fetch(
+  const response: globalThis.Response = await fetch(
     `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
     {
       headers: {
