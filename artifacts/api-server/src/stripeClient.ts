@@ -18,7 +18,7 @@ async function getStripeCredentials(): Promise<{
     );
   }
 
-  const response: globalThis.Response = await fetch(
+  const response = (await fetch(
     `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
     {
       headers: {
@@ -27,7 +27,7 @@ async function getStripeCredentials(): Promise<{
       },
       signal: AbortSignal.timeout(10_000),
     },
-  );
+  )) as unknown as globalThis.Response;
 
   if (!response.ok) {
     throw new Error(
