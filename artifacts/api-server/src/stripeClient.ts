@@ -1,6 +1,14 @@
 import Stripe from "stripe";
 import { StripeSync } from "stripe-replit-sync";
 
+// Interface to bypass global Response collision with Express
+interface FetchResponse {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  json(): Promise<any>;
+}
+
 async function getStripeCredentials(): Promise<{
   secretKey: string;
   webhookSecret?: string;
@@ -27,7 +35,7 @@ async function getStripeCredentials(): Promise<{
       },
       signal: AbortSignal.timeout(10_000),
     },
-  )) as unknown as globalThis.Response;
+  )) as unknown as FetchResponse;
 
   if (!response.ok) {
     throw new Error(
