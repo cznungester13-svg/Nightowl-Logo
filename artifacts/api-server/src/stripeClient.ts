@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { StripeSync } from "stripe-replit-sync";
+import { classifyStripeSecretKey } from "./stripeSecret";
 
 // Interface to bypass global Response collision with Express
 interface FetchResponse {
@@ -59,6 +60,8 @@ async function getStripeCredentials(): Promise<{
       "Stripe is not connected or is missing a secret key. Connect Stripe first.",
     );
   }
+
+  classifyStripeSecretKey(secretKey);
 
   return {
     secretKey,

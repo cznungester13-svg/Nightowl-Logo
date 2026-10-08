@@ -1,5 +1,16 @@
 import Stripe from "stripe";
 
+function classifyStripeSecretKey(secretKey: string): void {
+  if (!secretKey.trim()) {
+    throw new Error("Missing Stripe secret key in the integration configuration.");
+  }
+  if (!/^sk_live_|^rk_live_/.test(secretKey)) {
+    throw new Error(
+      "The Stripe integration contains a test-mode or invalid secret key. Connect a live Stripe secret key before creating checkout sessions.",
+    );
+  }
+}
+
 async function getStripeSecretKey(): Promise<string> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
@@ -28,6 +39,7 @@ async function getStripeSecretKey(): Promise<string> {
   const settings = data.items?.[0]?.settings;
   const secretKey = settings?.secret ?? settings?.secret_key;
   if (!secretKey) throw new Error("The Stripe integration has no secret key.");
+  classifyStripeSecretKey(secretKey);
   return secretKey;
 }
 
