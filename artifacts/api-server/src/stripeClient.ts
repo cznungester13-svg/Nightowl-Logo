@@ -1,5 +1,4 @@
 import Stripe from "stripe";
-import { StripeSync } from "stripe-replit-sync";
 import { classifyStripeSecretKey } from "./stripeSecret";
 
 // Interface to bypass global Response collision with Express
@@ -14,50 +13,12 @@ async function getStripeCredentials(): Promise<{
   secretKey: string;
   webhookSecret?: string;
 }> {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? `repl ${process.env.REPL_IDENTITY}`
-    : process.env.WEB_REPL_RENEWAL
-      ? `depl ${process.env.WEB_REPL_RENEWAL}`
-      : null;
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!hostname || !xReplitToken) {
-    throw new Error(
-      "Missing Replit connector environment. Connect Stripe in the Integrations tab.",
-    );
-  }
-
-  const response = (await fetch(
-    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
-    {
-      headers: {
-        Accept: "application/json",
-        X_REPLIT_TOKEN: xReplitToken,
-      },
-      signal: AbortSignal.timeout(10_000),
-    },
-  )) as unknown as FetchResponse;
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch Stripe credentials: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  const data = (await response.json()) as {
-    items?: Array<{
-      settings?: {
-        secret?: string;
-        secret_key?: string;
-        webhook_secret?: string;
-      };
-    }>;
-  };
-  const settings = data.items?.[0]?.settings;
-  const secretKey = settings?.secret ?? settings?.secret_key;
   if (!secretKey) {
     throw new Error(
-      "Stripe is not connected or is missing a secret key. Connect Stripe first.",
+      "STRIPE_SECRET_KEY environment variable is missing. Add it in your Vercel project settings.",
     );
   }
 
@@ -65,7 +26,7 @@ async function getStripeCredentials(): Promise<{
 
   return {
     secretKey,
-    webhookSecret: settings?.webhook_secret,
+    webhookSecret,
   };
 }
 
@@ -74,16 +35,17 @@ export async function getUncachableStripeClient(): Promise<Stripe> {
   return new Stripe(secretKey);
 }
 
-export async function getStripeSync(): Promise<StripeSync> {
+// Stub or light wrapper replacement for getStripeSync to prevent build errors
+export async function getStripeSync(): Promise<any> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error("DATABASE_URL environment variable is required");
   }
 
   const { secretKey, webhookSecret } = await getStripeCredentials();
-  return new StripeSync({
-    poolConfig: { connectionString: databaseUrl },
-    stripeSecretKey: secretKey,
-    stripeWebhookSecret: webhookSecret ?? "",
+  
+  // Return standard Stripe instance since stripe-replit-sync is no longer used on Vercel
+  return new Stripe(secretKey, {
+    apiVersion: "2025-02-28.acacia" as any,
   });
 }
