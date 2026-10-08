@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { billingCustomersTable, db } from "@workspace/db";
 import { and, eq, inArray, isNull, lte, or } from "drizzle-orm";
-import { getStripeSync } from "./stripeClient";
+import { stripe } from "./stripeClient";
 import { logger } from "./lib/logger";
 
 function subscriptionFields(subscription: Stripe.Subscription) {
@@ -85,12 +85,14 @@ export class WebhookHandlers {
       );
     }
 
-    const sync = await getStripeSync();
-    await sync.processWebhook(payload, signature);
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      throw new Error("STRIPE_WEBHOOK_SECRET environment variable is required");
+    }
 
-    // StripeSync has verified the signature and synchronized the provider data.
-    // The application-level record below links that data to NightOwl's customer.
-    const event = JSON.parse(payload.toString("utf8")) as Stripe.Event;
+    // Verify the webhook signature using the standard Stripe SDK
+    const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+
     switch (event.type) {
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
@@ -204,6 +206,6 @@ export class WebhookHandlers {
         break;
     }
 
-    logger.info({ eventType: event.type }, "Stripe webhook synchronized");
+    logger.info({ eventType: event.type }, "Stripe webhook processed successfully");
   }
 }
