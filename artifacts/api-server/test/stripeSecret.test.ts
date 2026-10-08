@@ -16,7 +16,7 @@ test("accepts live secret keys without exposing their values", () => {
 test("rejects test-mode secrets with a non-sensitive reason", () => {
   assert.throws(
     () => classifyStripeSecretKey("sk_test_example"),
-    /test-mode Stripe secret key/i,
+    /test-mode secret key/i,
   );
 });
 
@@ -27,7 +27,7 @@ test("rejects publishable keys and malformed values", () => {
   );
   assert.throws(
     () => classifyStripeSecretKey("not-a-stripe-key"),
-    /invalid Stripe secret key format/i,
+    /invalid secret key format/i,
   );
 });
 
