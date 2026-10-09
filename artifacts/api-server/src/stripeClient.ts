@@ -1,51 +1,37 @@
 import Stripe from "stripe";
+import { StripeSync } from "stripe-replit-sync";
 import { classifyStripeSecretKey } from "./stripeSecret";
 
-// Interface to bypass global Response collision with Express
-interface FetchResponse {
-  ok: boolean;
-  status: number;
-  statusText: string;
-  json(): Promise<any>;
+const rawSecretKey = process.env.STRIPE_SECRET_KEY ?? "";
+
+if (!rawSecretKey) {
+  throw new Error("Missing Stripe secret key in the integration configuration.");
 }
 
-async function getStripeCredentials(): Promise<{
-  secretKey: string;
-  webhookSecret?: string;
-}> {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const secretKey: string = rawSecretKey;
+classifyStripeSecretKey(secretKey);
 
-  if (!secretKey) {
-    throw new Error(
-      "STRIPE_SECRET_KEY environment variable is missing. Add it in your Vercel project settings.",
-    );
-  }
+const stripeInstance = new Stripe(secretKey);
 
-  classifyStripeSecretKey(secretKey);
-
-  return {
-    secretKey,
-    webhookSecret,
-  };
-}
+export const stripe = stripeInstance;
+export const StripeClient = stripeInstance;
 
 export async function getUncachableStripeClient(): Promise<Stripe> {
-  const { secretKey } = await getStripeCredentials();
-  return new Stripe(secretKey);
+  return stripeInstance;
 }
 
-// Stub or light wrapper replacement for getStripeSync to prevent build errors
-export async function getStripeSync(): Promise<any> {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL environment variable is required");
+export async function getStripeSync(): Promise<StripeSync> {
+  const rawDatabaseUrl = process.env.DATABASE_URL ?? "";
+  if (!rawDatabaseUrl) {
+    throw new Error("DATABASE_URL is required for Stripe synchronization.");
   }
 
-  const { secretKey, webhookSecret } = await getStripeCredentials();
-  
-  // Return standard Stripe instance since stripe-replit-sync is no longer used on Vercel
-  return new Stripe(secretKey, {
-    apiVersion: "2025-02-28.acacia" as any,
+  const databaseUrl: string = rawDatabaseUrl;
+
+  return new StripeSync({
+    databaseUrl,
+    poolConfig: { connectionString: databaseUrl },
+    stripeSecretKey: secretKey,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   });
 }
