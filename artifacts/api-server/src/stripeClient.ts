@@ -11,27 +11,23 @@ if (!rawSecretKey) {
 const secretKey: string = rawSecretKey;
 classifyStripeSecretKey(secretKey);
 
-const stripeInstance = new Stripe(secretKey);
+// Main stripe client export
+export const stripe = new Stripe(secretKey);
 
-export const stripe = stripeInstance;
-export const StripeClient = stripeInstance;
-
-export async function getUncachableStripeClient(): Promise<Stripe> {
-  return stripeInstance;
+// Export getUncachableStripeClient as requested by src/routes/billing.ts
+export function getUncachableStripeClient() {
+  return new Stripe(secretKey);
 }
 
-export async function getStripeSync(): Promise<StripeSync> {
-  const rawDatabaseUrl = process.env.DATABASE_URL ?? "";
-  if (!rawDatabaseUrl) {
-    throw new Error("DATABASE_URL is required for Stripe synchronization.");
+// Export getStripeSync as requested by src/index.ts
+let stripeSyncInstance: StripeSync | null = null;
+export function getStripeSync() {
+  if (!stripeSyncInstance) {
+    stripeSyncInstance = new StripeSync({
+      secretKey: secretKey,
+    } as any);
   }
-
-  const databaseUrl: string = rawDatabaseUrl;
-
-  return new StripeSync({
-    databaseUrl,
-    poolConfig: { connectionString: databaseUrl },
-    stripeSecretKey: secretKey,
-    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
-  });
+  return stripeSyncInstance;
 }
+
+export default stripe;
